@@ -1,0 +1,92 @@
+import processing.serial.*;
+Serial bluetoothPort;
+
+void setup() {
+  final String expectedPort = Serial.list()[0];
+  
+  //printArray(Serial.list());
+  
+  try {
+    println("Пробуем подключиться к : " + expectedPort);
+    bluetoothPort = new Serial(this, expectedPort, 9600);
+    println("Есть контакт!");
+  } catch (Exception e) {
+    println("Не удалось подключиться. Порт занят");
+  }
+  
+  size (600, 600);
+  background(0);
+
+  columns.add(new SpeedColumn(10,10,180,100));
+  columns.add(new DistanceColumn(190,10,360,100));
+  columns.add(new SpeedColumn(370,10,540,100));
+  
+}
+
+void draw() {
+  for(InformationColumn col : columns) {
+    col.draw();
+  }
+}
+
+private class Table {
+  private int width;
+  private int height;
+  private ArrayList<InformationColumn> columns = new ArrayList();;
+  
+  private int columnWidth;
+  private int columnHeight;
+  private int topIndent;  
+  
+  Table(int width, int height) {
+    this.width = width;
+    this.height = height;
+    this.topIndent = int(height * 0.05);
+  }
+  public void addColumn(InformationColumn column) {
+    columns.add(column);  
+  } 
+  public void draw() {
+    
+  }
+  
+  private void calculateColumnSize() {
+    int columnCount = columns.size();
+    float interval = width * 0.05;
+    columnWidth = int(( this.width - columnCount * interval ) / columnCount);
+    columnHeight = int(height * 0.7); 
+  }
+}
+
+private class InformationColumn {
+  protected String label;
+  private ArrayList<String> values;
+  
+  private int labelSize;
+  private int dataSize; 
+  
+  private color backgroundColor;
+  private color labelColor;
+  private color dataColor;
+  
+  private final int xTop;
+  private final int yTop;
+  private final int xBot;
+  private final int yBot;
+  
+  InformationColumn(int xt, int yt, int xb, int yb) {
+    this.xTop = xt;
+    this.yTop = yt;
+    this.xBot = xb;
+    this.yBot = yb;
+    this.values = new ArrayList<String>(1000);
+  }
+  
+  public void addValue(String currentValue) {
+    values.add(currentValue);
+  }
+  
+  public void draw() {
+    //rect(xTop,yTop,xBot,yBot);
+  }
+}
