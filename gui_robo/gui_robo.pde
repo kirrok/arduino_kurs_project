@@ -154,11 +154,12 @@ private class Column {
     textSize(labelTextSize);
     text(label, width /2 + x, y);
     textSize(dataSize);
-   
-    for (int i = values.size() - 1, row = 1; i > values.size() - 10; i--){
-      
-      text(values.get(i), width /2 + x, y + labelHeight + row * rowHeight);
-      row++;
+    
+    int row = 1;
+    
+    for(String value: values.subList(Math.max(values.size() - 10, 0), values.size())) {
+      text(value, width /2 + x, y + labelHeight + row * rowHeight);
+      row++;  
     }
   }
 }
