@@ -1,15 +1,15 @@
 import processing.serial.*;
+import java.util.Stack;
 Serial bluetoothPort;
+SerialHelper serHelper;
+
 Table table;
 static int k = 0;
 
-import java.util.concurrent.atomic.*;
-
 void setup() {
+
   final String expectedPort = Serial.list()[0];
-
-  //printArray(Serial.list());
-
+  
   try {
     println("Пробуем подключиться к : " + expectedPort);
     bluetoothPort = new Serial(this, expectedPort, 9600);
@@ -18,6 +18,8 @@ void setup() {
   catch (Exception e) {
     println("Не удалось подключиться. Порт занят");
   }
+  serHelper = new SerialHelper(bluetoothPort);
+  //printArray(Serial.list());
 
   size (600, 600);
   background(0);
@@ -30,8 +32,10 @@ void setup() {
 }
 
 void draw() {
-  
   background(0);
+  
+  serHelper.read();
+
   table.draw();
   
   table.getColumn("СКОРОСТЬ").addValue("" + k++);
@@ -123,9 +127,6 @@ private class Column {
 
   Column(String label) {
     this.label = label;
-    for(int i = 0 ; i < 30; i++) {
-      values.add("VAL" + i);
-    }
   }
   
   public void setColor(int col) {
@@ -160,4 +161,39 @@ private class Column {
       row++;
     }
   }
+}
+
+
+private class SerialHelper {
+  private Serial port;
+  
+  private final char direction = 'r'; 
+  private final char speed = 's';
+  private final char distance = 'd';
+  
+  private Stack<String> dirS = new Stack<String>();
+  private Stack<String> spdS = new Stack<String>();
+  private Stack<String> disS = new Stack<String>();
+  
+  private char inputType;
+  
+  SerialHelper(Serial port) {
+    this.port = port;
+  }
+  
+  public void read() {
+    if(port.available() > 0) {
+      inputType = port.readChar();
+      println(inputType);
+    } 
+    
+     switch(inputType) {
+       case speed: spdS.push(port.readString());
+       break;
+       case distance: disS.push(port.readString());
+       break;
+       case direction: dirS.push(port.readString());
+       break;
+     }
+  }  
 }
