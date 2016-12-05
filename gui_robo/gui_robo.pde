@@ -38,6 +38,12 @@ void draw() {
   delay(150);
 }
 
+void keyPressed() {
+  if(key == 'w' || key == 's' || key == 'a' || key == 'd') {
+    bluetoothPort.write(key);
+  }
+}
+
 private class Table {
   private int width;
   private int height;
