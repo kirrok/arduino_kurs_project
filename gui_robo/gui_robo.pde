@@ -30,11 +30,14 @@ void setup() {
 }
 
 void draw() {
+  
   background(0);
   table.draw();
+  
   table.getColumn("СКОРОСТЬ").addValue("" + k++);
   table.getColumn("РАССТОЯНИЕ").addValue("" + k++);
   table.getColumn("НАПРАВЛЕНИЕ").addValue("" + k++);
+  
   delay(150);
 }
 
