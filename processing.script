@@ -1,5 +1,9 @@
 import processing.serial.*;
 Serial bluetoothPort;
+Table table;
+static int k = 0;
+
+import java.util.concurrent.atomic.*;
 
 void setup() {
   final String expectedPort = Serial.list()[0];
@@ -16,52 +20,72 @@ void setup() {
   
   size (600, 600);
   background(0);
-
-  columns.add(new SpeedColumn(10,10,180,100));
-  columns.add(new DistanceColumn(190,10,360,100));
-  columns.add(new SpeedColumn(370,10,540,100));
   
+  table = new Table(400, 200);
+  
+  table.addColumn(new Column("СКОРОСТь"));
+  table.addColumn(new Column("РАССТОЯНИЕ"));
+  table.addColumn(new Column("НАПРАВЛЕНИЕ"));
+
 }
 
 void draw() {
-  for(InformationColumn col : columns) {
-    col.draw();
-  }
+  table.draw();
 }
 
 private class Table {
   private int width;
   private int height;
-  private ArrayList<InformationColumn> columns = new ArrayList();;
-  
-  private int columnWidth;
-  private int columnHeight;
-  private int topIndent;  
+  private ArrayList<Column> columns = new ArrayList<Column>();
+  private boolean sizesSet = false;
   
   Table(int width, int height) {
     this.width = width;
     this.height = height;
-    this.topIndent = int(height * 0.05);
-  }
-  public void addColumn(InformationColumn column) {
-    columns.add(column);  
-  } 
-  public void draw() {
-    
   }
   
-  private void calculateColumnSize() {
-    int columnCount = columns.size();
-    float interval = width * 0.05;
-    columnWidth = int(( this.width - columnCount * interval ) / columnCount);
-    columnHeight = int(height * 0.7); 
+  public void addColumn(Column column) {
+    columns.add(column);
+    sizesSet = false;
+}
+  
+  public void draw() {
+    if (!sizesSet) {
+      setColumnSize();
+    }
+    for( Column col: columns) {
+      col.draw();
+    }
   }
+  
+  private void setColumnSize() {
+    int columnCount = columns.size();
+    
+    int interval = int(width * 0.02);
+    
+    int topIndent = int(height * 0.05);
+    
+    int columnWidth = int(( this.width - (columnCount + 1) * interval ) / columnCount);
+    
+    int columnHeight = int(height * 0.7); 
+    
+  
+    int x = interval;
+    int y = topIndent;
+    int horizontalDiff = interval + columnWidth;
+     
+     
+    for(Column column : columns) {
+      column.setSize(x, topIndent, columnWidth, columnHeight);
+      x += horizontalDiff;
+    }
+    sizesSet = true;
+  }  
 }
 
-private class InformationColumn {
-  protected String label;
-  private ArrayList<String> values;
-  
+private class Column {
+  public String label;
+  private ArrayList<String> values = new ArrayList<String>();
   private int labelSize;
   private int dataSize; 
   
@@ -69,24 +93,26 @@ private class InformationColumn {
   private color labelColor;
   private color dataColor;
   
-  private final int xTop;
-  private final int yTop;
-  private final int xBot;
-  private final int yBot;
+  private int x;
+  private int y;
+  private int height;
+  private int width;
   
-  InformationColumn(int xt, int yt, int xb, int yb) {
-    this.xTop = xt;
-    this.yTop = yt;
-    this.xBot = xb;
-    this.yBot = yb;
-    this.values = new ArrayList<String>(1000);
+  Column(String label) {
+    this.label = label;
   }
   
   public void addValue(String currentValue) {
     values.add(currentValue);
   }
   
+  public void setSize(int x , int y, int w, int h) {
+    this.x = x;
+    this.y = y;
+    this.height = h;
+    this.width = w;
+  }
   public void draw() {
-    //rect(xTop,yTop,xBot,yBot);
+    rect(x, y, width, height);
   }
 }
