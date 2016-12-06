@@ -1,9 +1,9 @@
 int val;
 int LED = 13;
 
- char direction  = 'r';
- char speed  = 's';
- char distance  = 'd';
+ int direction  = 1;
+ int speed  = 2;
+ int distance  = 3;
 
 static int k = 0;
 

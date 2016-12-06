@@ -40,15 +40,14 @@ void setup() {
 void draw() {
   background(0);
 
-  table.draw();
-
   serHelper.read();
-  println(serHelper.getContent());
+  println("CONTENT " + serHelper.getContent());
   table.fill(serHelper.getContent());
 
   serHelper.dropContent();
 
-  delay(600);
+  table.draw();
+  delay(200);
 }
 
 void keyPressed() {
@@ -82,13 +81,10 @@ private class Table {
   }
 
   public void fill(HashMap<Integer, ArrayList<String>> content) {
-    println("CONTENT: " + content);
-    println("COLUMNS: " + columns);
+    
     for (Column col : columns) {
-      println("CYCLE. CONTENT.GET: " + content.get(col.getName()));
-      col.fill(content.get(col.getName()));
+      col.fill(content.get(col.getId()));
     }
-    //getColumn(label).getValues().addAll(values);
   }
 
   public void draw() {
@@ -147,12 +143,10 @@ private class Column {
     this.label = label;
     this.id = id;
   }
-  public String getName() {
-    return label;
+  public Integer getId() {
+    return id;
   }
   public void fill(ArrayList<String>  val) {
-    println("VA: :" +  val);
-    println("VALUES: " + values);
     this.values.addAll(val);
   }
   public void setSize(int x, int y, int w, int h) {
@@ -209,20 +203,20 @@ private class SerialHelper {
   }
 
   public void read() {
-    int inputType;
+    Integer inputType = new Integer(0);
 
     if (port.available() > 0) {
       inputType = port.read();
     } else {
       return;
     }
-
+    println("read" + inputType); 
     String curInput = Integer.toString(port.read());
-
-    content.get(inputType).add(curInput);
-
-    if (port.available() > 0) {
-      this.read();
-    }
+    println("READ CONTENT GET:" + content.get(new Integer(inputType)));
+    content.get(new Integer(inputType)).add(curInput);
+    
+    //if (port.available() > 0) {
+    //   this.read();
+    //}
   }
 }
