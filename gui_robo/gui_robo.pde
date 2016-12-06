@@ -1,5 +1,7 @@
 import processing.serial.*;
 import java.util.Stack;
+import java.util.stream.Collectors;
+
 Serial bluetoothPort;
 SerialHelper serHelper;
 
@@ -33,16 +35,19 @@ void setup() {
 
 void draw() {
   background(0);
-  
+
   serHelper.read();
+
 
   table.draw();
   
-  table.getColumn("СКОРОСТЬ").addValue("" + k++);
-  table.getColumn("РАССТОЯНИЕ").addValue("" + k++);
-  table.getColumn("НАПРАВЛЕНИЕ").addValue("" + k++);
-  
-  delay(150);
+  table.fill("СКОРОСТЬ", serHelper.getSp());
+  serHelper.drop("СКОРОСТЬ");
+  table.fill("РАССТОЯНИЕ", serHelper.getDist());
+  serHelper.drop("РАССТОЯНИЕ");
+  table.fill("НАПРАВЛЕНИЕ", serHelper.getDir());
+  serHelper.drop("СКОРОСТЬ");
+  delay(600);
 }
 
 void keyPressed() {
@@ -64,7 +69,7 @@ private class Table {
   
   public Column getColumn(String label) {
       for (Column col : columns) {
-        if (col.label == label) {
+        if (col.label == label) {    
           return col;
         }
       }
@@ -73,6 +78,10 @@ private class Table {
   public void addColumn(Column column) {
     columns.add(column);
     sizesSet = false;
+  }
+
+  public void fill(String label, Stack<String> values) {  
+     getColumn(label).getValues().addAll(values);
   }
 
   public void draw() {
@@ -129,21 +138,17 @@ private class Column {
     this.label = label;
   }
   
-  public void setColor(int col) {
-    backgroundColor = col;
+  public ArrayList<String> getValues() {
+    return values;
   }
   
-  public void addValue(String currentValue) {
-    values.add(currentValue);
-  }
-
   public void setSize(int x, int y, int w, int h) {
     this.x = x;
     this.y = y;
     this.height = h;
     this.width = w;
   }
-  
+    
   public void draw() {
     stroke(255, 50, 50);
     noFill();
@@ -157,9 +162,11 @@ private class Column {
     
     int row = 1;
     
-    for(String value: values.subList(Math.max(values.size() - 10, 0), values.size())) {
-      text(value, width /2 + x, y + labelHeight + row * rowHeight);
-      row++;  
+    if (values.size() != 0) {
+      for(String value: values.subList(Math.max(values.size() - 10, 0), values.size())) {
+        text(value, width /2 + x, y + labelHeight + row * rowHeight);
+        row++;  
+      }
     }
   }
 }
@@ -182,19 +189,50 @@ private class SerialHelper {
     this.port = port;
   }
   
+  public void drop(String bufName) {
+    switch(bufName) {
+      case "РАССТОЯНИЕ" : 
+        disS.clear();
+        break;
+      case "СКОРОСТЬ" : 
+        spdS.clear();
+        break;
+      case "НАПРАВЛЕНИЕ" : 
+        dirS.clear();
+        break;
+    }
+  }
+  
+  public Stack<String> getDir() {
+    return dirS;
+  }
+  public Stack<String> getSp() {
+    return spdS;
+  }
+  public Stack<String> getDist() {
+    return disS;
+  }
+  
   public void read() {
     if(port.available() > 0) {
       inputType = port.readChar();
-      println(inputType);
     } 
     
+    String curInput = Integer.toString(port.read());
+    
+    if(curInput != null) {
      switch(inputType) {
-       case speed: spdS.push(port.readString());
+       case speed: spdS.push(curInput);
        break;
-       case distance: disS.push(port.readString());
+       case distance: disS.push(curInput);
        break;
-       case direction: dirS.push(port.readString());
+       case direction: dirS.push(curInput);
        break;
      }
+    }
+    
+    if(port.available() > 0) {
+      this.read();
+    } 
   }  
 }
