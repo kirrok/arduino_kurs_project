@@ -33,15 +33,16 @@ void setup() {
   table = new Table(600, 400);
 
   table.addColumn(new Column("СКОРОСТЬ", 1));
+  table.addColumn(new Column("П УГЛ. СКОР", 4));
+  table.addColumn(new Column("Л УГЛ. СКОР", 5));
   table.addColumn(new Column("РАССТОЯНИЕ", 2));
-  table.addColumn(new Column("НАПРАВЛЕНИЕ",3 ));
+  table.addColumn(new Column("НАПРАВЛЕНИЕ", 3 ));
 }
 
 void draw() {
   background(0);
 
   serHelper.read();
-  println("CONTENT " + serHelper.getContent());
   table.fill(serHelper.getContent());
 
   serHelper.dropContent();
@@ -80,10 +81,13 @@ private class Table {
     sizesSet = false;
   }
 
-  public void fill(HashMap<Integer, ArrayList<String>> content) {
-    
+  public void fill(HashMap<Integer, ArrayList<String>> content) {  
     for (Column col : columns) {
-      col.fill(content.get(col.getId()));
+      ArrayList<String> curContent = content.get(col.getId());
+      if (curContent == null) {
+        curContent = new ArrayList<String>();
+      }
+      col.fill(curContent);
     }
   }
 
@@ -124,9 +128,9 @@ private class Table {
 private class Column {
   public String label;
   private final ArrayList<String> values = new ArrayList<String>();
-  
+
   private int id;
-  
+
   private int labelTextSize = 16;
   private int labelHeight = 30;
   private int rowHeight = 20;
@@ -174,6 +178,8 @@ private class Column {
         text(value, width /2 + x, y + labelHeight + row * rowHeight);
         row++;
       }
+    } else {
+        text("NAN", width /2 + x, y + labelHeight + row * rowHeight);
     }
   }
 }
@@ -181,13 +187,13 @@ private class Column {
 
 private class SerialHelper {
   private Serial port;
-  
+
   private HashMap<Integer, ArrayList<String>> content = new HashMap<Integer, ArrayList<String>>();
 
   SerialHelper(Serial port) {
     this.port = port;
   }
-  
+
   public void addDataType(Integer id) {
     content.put(id, new ArrayList<String>());
   }
@@ -210,11 +216,17 @@ private class SerialHelper {
     } else {
       return;
     }
-    println("read" + inputType); 
+
     String curInput = Integer.toString(port.read());
-    println("READ CONTENT GET:" + content.get(new Integer(inputType)));
-    content.get(new Integer(inputType)).add(curInput);
-    
+
+    ArrayList<String> curBuffer = content.get(new Integer(inputType));
+
+    if (curBuffer != null) {
+      curBuffer.add(curInput);
+    } else {
+      curBuffer.add("NAN");
+    }
+
     //if (port.available() > 0) {
     //   this.read();
     //}
