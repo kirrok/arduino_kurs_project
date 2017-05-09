@@ -1,27 +1,28 @@
 #include <AFMotor.h>
 #include "TimerOne.h"
-// motors
-const int PIN_ENCODER_LEFT = 2;  // Пин прерываний для датчика скорости ЛЕВОГО колеса
-const int PIN_ENCODER_RIGHT = 3; // Пин прерываний для датчика скорости ПРАВОГО колеса
+// ---------------------- motors ----------------------------
+const int PIN_ENCODER_LEFT = 2;
+const int PIN_ENCODER_RIGHT = 3;
 
 volatile unsigned int pulsesLeft;
 volatile unsigned int pulsesRight;
 
-int realSpeedLeft;
-int realSpeedRight;
+volatile int realSpeedLeft;
+volatile int realSpeedRight;
 
 AF_DCMotor motor2(4);
 AF_DCMotor motor1(3);
 
-// wifi
+// ----------------------  wifi  ----------------------------
 char command;
 
-// pi regular
+// -------------------- pi-regular --------------------------
 float kp=10;
 float ki = 0.001;
 const float I_MIN = -360;
 const float I_MAX = 360;
 float iSum = 0;
+long timerInterval = 200000;
  
 void setup() {
   Serial.println("log.info: setup start");
@@ -29,34 +30,33 @@ void setup() {
   Serial3.begin(115200);
   Serial.begin(9600);
 
-  Timer1.initialize(20 * 1000);
+  Timer1.initialize(timerInterval);
   Timer1.attachInterrupt(timerInterceptor);
   
   pinMode(PIN_ENCODER_LEFT, INPUT);
   pinMode(PIN_ENCODER_RIGHT, INPUT);
+  
   pulsesLeft = 0;
   pulsesRight = 0;
   
   attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_LEFT), incrementPulsesLeft, FALLING);
   attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_RIGHT), incrementPulsesRight, FALLING);
-  motor2.setSpeed(200);
+  
+  motor2.setSpeed(255);
   motor2.run(RELEASE);
-  motor1.setSpeed(200);
+  motor1.setSpeed(255);
   motor1.run(RELEASE);
   
   Serial.println("log.info: setup end");
 }
  
-void loop() {
-  
-  Serial.print("RPM_LEFT = ");
-  Serial.println(pulsesLeft * 4, DEC);
-  pulsesLeft = 0;
+void loop() {  
+  Serial.print("left pulses per 0.2 sec = ");
+  Serial.println(realSpeedLeft, DEC);
 
   receiveCommand();
   doAction(command);
-  sendTelemetry();
-  delay(50);
+  delay(200);
 }
 
 float PIctl(float error) {
@@ -78,8 +78,8 @@ float PIctl(float error) {
  return up+ui;
 }
 
-
 void timerInterceptor() {
+  Serial.println("log.debug timerInterceptor");
   realSpeedLeft = pulsesLeft;
   pulsesLeft = 0;
   realSpeedRight = pulsesRight;
@@ -87,7 +87,8 @@ void timerInterceptor() {
 }
 
 void incrementPulsesLeft() {
- pulsesLeft++;
+  pulsesLeft++;
+  delay(1);
 }
 
 void incrementPulsesRight() {
@@ -123,7 +124,7 @@ void receiveCommand() {
 }
 
 void moveForward() {
-  Serial.println("log.debug: moveForward");
+//  Serial.println("log.debug: moveForward");
   motor2.run(FORWARD);
 //  motor1.run(FORWARD);
 }
@@ -143,7 +144,7 @@ void turnLeft() {
 }
 
 void stopAction(){
-  Serial.println("log.debug: stopAction");
+//  Serial.println("log.debug: stopAction");
   motor2.run(RELEASE);
   motor1.run(RELEASE);
 }
