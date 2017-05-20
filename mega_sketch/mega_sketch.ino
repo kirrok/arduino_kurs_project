@@ -1,26 +1,34 @@
+//При интервале таймера счетчика импульсов энкодера в 200000 (0.2 мc)
+//Скорость                  Мотор 1   Мотор 2
+//
+//При скорости 255          8-12      27-32
+//
+//При скорости 150          4-11      16-20
+
+//При интервале таймера счетчика импульсов энкодера в 1000000 (1 c)
+//Скорость                  Мотор 1   Мотор 2
+//
+//При скорости 255          55-60     138-141
+//
+//При скорости 150          38        84
+//
+//При скорости 100          стоит    45-50
+
+//Скорости выравниваются при 200 и 100
+
+
 #include <AFMotor.h>
 #include "TimerOne.h"
 // ---------------------- motors ----------------------------
 const int PIN_ENCODER_LEFT = 2;
 const int PIN_ENCODER_RIGHT = 3;
-const float ENCODER_COEFFICIENT = 8.88;
-
-/*info
-  255 - 27..30 pulses per 0.2 sec среднее 28.5
-  100 - 8..12 pulses per 0.2 sec среднее 10
-
-  k = 8.33..9.44 среднее 8.88
-*/
-
-int goalSpeedLeft = 20;
-int goalSpeedRight = 20;
 
 AF_DCMotor motor2(4);
 AF_DCMotor motor1(3);
 
 // ----------------------  encoders  ----------------------------
-float minPulsesPerTimeUnit = 8;
-float maxPulsesPerTimeUnit = 30;
+
+// 20 .. 50
 volatile unsigned int pulsesLeft;
 volatile unsigned int pulsesRight;
 volatile int pulsesLeftPerTimeUnit;
@@ -30,17 +38,18 @@ volatile int pulsesRightPerTimeUnit;
 char command;
 
 // -------------------- timer --------------------------
-long timerInterval = 500000; // 0.2 секунды
+long timerInterval = 1000000; // 0.2 секунды
 
 
 // -------------------- pi-regular --------------------------
 // Диапазон сигнала управления
-float minControlActionLeft = 40;
-float maxControlActionLeft = 255;
-float maxError = goalSpeedLeft;
+float minControlActionLeft = 100;
+float maxControlActionLeft = 150;
+float maxErrorLeft = 30;
 
-float minControlActionRight = 150;
+float minControlActionRight = 200;
 float maxControlActionRight = 255;
+float maxErrorRight = 50;
 
 struct PI_CONTROLLER {
   float Kp;
@@ -64,9 +73,9 @@ struct PI_CONTROLLER {
     return Kp * err + Ki * integral;
   }
 
-  float y2u(float y, float minControlAction, float maxControlAction) {
+  float y2u(float y,float maxError, float minControlAction, float maxControlAction) {
     float u;
-    float maxY = Kp * maxError + Ki * max_integral;
+    float maxY = Kp * maxError;
     //    Serial.print("maxY: ");
     //    Serial.print(maxY, DEC);
     float minY = -maxY;
@@ -75,12 +84,14 @@ struct PI_CONTROLLER {
     //    Serial.print(u, DEC);
     if (u > maxControlAction) u = maxControlAction;
     if (u < minControlAction) u = minControlAction;
+    //    Serial.print("u: ");
+    //    Serial.print(u, DEC);
     return u;
   }
 };
 
-PI_CONTROLLER piControllerLeft(2, 0.001, -10, 1000);
-PI_CONTROLLER piControllerRight(10, 0.001, -10, 1000);
+PI_CONTROLLER piControllerLeft(2, 0.2, -100, 100);
+PI_CONTROLLER piControllerRight(2, 0.2, -100, 100);
 
 void setup() {
   Serial.println("log.info: setup start");
@@ -106,52 +117,56 @@ void setup() {
   Serial.println("log.info: setup end");
 }
 
+int goalSpeedLeft = 40;
+int goalSpeedRight = 40;
+
+volatile int leftSpeedCurrent;
 void loop() {
 
   float errorLeft = goalSpeedLeft - pulsesLeftPerTimeUnit;
   float YLeft = piControllerLeft.Eval(errorLeft);
-  float ULeft = piControllerLeft.y2u(YLeft, minControlActionLeft, maxControlActionLeft);
+  float ULeft = piControllerLeft.y2u(YLeft, maxErrorLeft, minControlActionLeft, maxControlActionLeft);
 
+    motor2.setSpeed(ULeft);
+    motor2.run(FORWARD);
 
-
-//  motor2.setSpeed(250);
-//  motor2.run(FORWARD);
-// 255 59
-// 150 35
   float errorRight = goalSpeedRight - pulsesRightPerTimeUnit;
   float YRight = piControllerRight.Eval(errorRight);
-  float URight = piControllerRight.y2u(YRight, minControlActionRight, maxControlActionRight);
+  float URight = piControllerRight.y2u(YRight, maxErrorLeft, minControlActionRight, maxControlActionRight);
 
-// 1деление 15 град
-// 0.7 оборота в секунду = 252 град 
-// 0.2 об в секунду 72 град
-// 255  25
-// 150 15
-  motor1.setSpeed(200);
+  motor1.setSpeed(URight);
   motor1.run(FORWARD);
-
-  //  Serial.print("Y: ");
-  //  Serial.print(Y, DEC);
-
-
-  Serial.print("speed. ");
+  
+  Serial.print("g: ");
+  Serial.print(goalSpeedLeft, DEC);
+  Serial.print(" speed. ");
   Serial.print("left: ");
-  //  Serial.print(goalSpeedLeft, DEC);
-  //  Serial.print(" realSpeedLeft: ");
   Serial.print(pulsesLeftPerTimeUnit, DEC);
   Serial.print("   right: ");
-  Serial.println(pulsesRightPerTimeUnit, DEC);
-//    Serial.print(" U: ");
-//    Serial.println(U, DEC);
+  Serial.print(pulsesRightPerTimeUnit, DEC);
+  //  Serial.print("   y: ");
+  //  Serial.print("   left: ");
+  //  Serial.print(YLeft, DEC);
+  //    Serial.print("   right: ");
+  Serial.print("   ");
+  Serial.print(YRight, DEC);
 
-
+  Serial.print(" errorLeft ");
+  Serial.print(errorLeft, DEC);
+  Serial.print(" errorRight ");
+  Serial.print(errorRight, DEC);
+  Serial.print(" ul ");
+  Serial.print(ULeft, DEC);
+  Serial.print(" ur ");
+  Serial.print(URight, DEC);
   //  receiveCommand();
   //  doAction(command);
+  Serial.println();
   delay(50);
+
 }
 
 void timerInterceptor() {
-  Serial.print("   tick ");
   pulsesLeftPerTimeUnit = pulsesLeft;
   pulsesLeft = 0;
   pulsesRightPerTimeUnit = pulsesRight;
