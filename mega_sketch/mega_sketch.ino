@@ -12,8 +12,8 @@ const float ENCODER_COEFFICIENT = 8.88;
   k = 8.33..9.44 среднее 8.88
 */
 
-int goalSpeedLeft = 15;
-int goalSpeedRight = 30;
+int goalSpeedLeft = 20;
+int goalSpeedRight = 20;
 
 AF_DCMotor motor2(4);
 AF_DCMotor motor1(3);
@@ -30,13 +30,17 @@ volatile int pulsesRightPerTimeUnit;
 char command;
 
 // -------------------- timer --------------------------
-long timerInterval = 200000;
+long timerInterval = 500000; // 0.2 секунды
+
 
 // -------------------- pi-regular --------------------------
 // Диапазон сигнала управления
-float minControlAction = 100;
-float maxControlAction = 255;
+float minControlActionLeft = 40;
+float maxControlActionLeft = 255;
 float maxError = goalSpeedLeft;
+
+float minControlActionRight = 150;
+float maxControlActionRight = 255;
 
 struct PI_CONTROLLER {
   float Kp;
@@ -44,7 +48,7 @@ struct PI_CONTROLLER {
   float integral;
   float min_integral;
   float max_integral;
-  
+
   PI_CONTROLLER(float Kp0, float Ki0, float mini, float maxi) {
     Kp = Kp0;
     Ki = Ki0;
@@ -59,23 +63,24 @@ struct PI_CONTROLLER {
     if (integral < min_integral) integral = min_integral;
     return Kp * err + Ki * integral;
   }
-  
-  float y2u(float y) {
+
+  float y2u(float y, float minControlAction, float maxControlAction) {
     float u;
     float maxY = Kp * maxError + Ki * max_integral;
-    Serial.print("maxY: ");
-    Serial.print(maxY, DEC);
+    //    Serial.print("maxY: ");
+    //    Serial.print(maxY, DEC);
     float minY = -maxY;
     u = (y - minY) / (maxY - minY) * (maxControlAction - minControlAction) + minControlAction;
-    Serial.print("u: ");
-    Serial.print(u, DEC);
+    //    Serial.print("u: ");
+    //    Serial.print(u, DEC);
     if (u > maxControlAction) u = maxControlAction;
     if (u < minControlAction) u = minControlAction;
     return u;
   }
 };
 
-PI_CONTROLLER piController(0.5, 0.001, -10, 10);
+PI_CONTROLLER piControllerLeft(2, 0.001, -10, 1000);
+PI_CONTROLLER piControllerRight(10, 0.001, -10, 1000);
 
 void setup() {
   Serial.println("log.info: setup start");
@@ -95,46 +100,71 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_LEFT), incrementPulsesLeft, FALLING);
   attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_RIGHT), incrementPulsesRight, FALLING);
 
-  motor2.setSpeed(goalSpeedLeft);
   motor2.run(RELEASE);
-  motor1.setSpeed(goalSpeedRight);
   motor1.run(RELEASE);
 
   Serial.println("log.info: setup end");
 }
 
 void loop() {
-  
-  float error = goalSpeedLeft - pulsesLeftPerTimeUnit;
 
-  float Y = piController.Eval(error);
-  Serial.print("Y: ");
-  Serial.print(Y, DEC);
-  float U = piController.y2u(Y);
-  
-  Serial.print("goalSpeed: ");
-  Serial.print(goalSpeedLeft, DEC);
-  Serial.print(" realSpeedLeft: ");
-  Serial.print(pulsesLeftPerTimeUnit, DEC);
-  Serial.print(" U: ");
-  Serial.println(U, DEC);
-  motor2.setSpeed(U);
+  float errorLeft = goalSpeedLeft - pulsesLeftPerTimeUnit;
+  float YLeft = piControllerLeft.Eval(errorLeft);
+  float ULeft = piControllerLeft.y2u(YLeft, minControlActionLeft, maxControlActionLeft);
+
+
+
+//  motor2.setSpeed(250);
 //  motor2.run(FORWARD);
-//  receiveCommand();
-//  doAction(command);
+// 255 59
+// 150 35
+  float errorRight = goalSpeedRight - pulsesRightPerTimeUnit;
+  float YRight = piControllerRight.Eval(errorRight);
+  float URight = piControllerRight.y2u(YRight, minControlActionRight, maxControlActionRight);
+
+// 1деление 15 град
+// 0.7 оборота в секунду = 252 град 
+// 0.2 об в секунду 72 град
+// 255  25
+// 150 15
+  motor1.setSpeed(200);
+  motor1.run(FORWARD);
+
+  //  Serial.print("Y: ");
+  //  Serial.print(Y, DEC);
+
+
+  Serial.print("speed. ");
+  Serial.print("left: ");
+  //  Serial.print(goalSpeedLeft, DEC);
+  //  Serial.print(" realSpeedLeft: ");
+  Serial.print(pulsesLeftPerTimeUnit, DEC);
+  Serial.print("   right: ");
+  Serial.println(pulsesRightPerTimeUnit, DEC);
+//    Serial.print(" U: ");
+//    Serial.println(U, DEC);
+
+
+  //  receiveCommand();
+  //  doAction(command);
   delay(50);
 }
 
 void timerInterceptor() {
+  Serial.print("   tick ");
   pulsesLeftPerTimeUnit = pulsesLeft;
   pulsesLeft = 0;
   pulsesRightPerTimeUnit = pulsesRight;
   pulsesRight = 0;
 }
 
-void incrementPulsesLeft() { pulsesLeft++; }
+void incrementPulsesLeft() {
+  pulsesLeft++;
+}
 
-void incrementPulsesRight() { pulsesRight++; }
+void incrementPulsesRight() {
+  pulsesRight++;
+}
 
 void doAction(const char direction) {
   //  Serial.println("log.debug: doAction " + direction);
@@ -176,9 +206,13 @@ void moveBack() {
   motor1.run(BACKWARD);
 }
 
-void turnRight() { Serial.println("log.debug: turnRight"); }
+void turnRight() {
+  Serial.println("log.debug: turnRight");
+}
 
-void turnLeft() { Serial.println("log.debug: turnLeft"); }
+void turnLeft() {
+  Serial.println("log.debug: turnLeft");
+}
 
 void stopAction() {
   //  Serial.println("log.debug: stopAction");
