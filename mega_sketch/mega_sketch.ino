@@ -38,7 +38,7 @@ volatile int pulsesRightPerTimeUnit;
 char command;
 
 // -------------------- timer --------------------------
-long timerInterval = 1000000; // 0.2 секунды
+long timerInterval = 200000; // 0.2 секунды
 
 
 // -------------------- pi-regular --------------------------
@@ -144,10 +144,6 @@ void loop() {
   Serial.print(pulsesLeftPerTimeUnit, DEC);
   Serial.print("   right: ");
   Serial.print(pulsesRightPerTimeUnit, DEC);
-  //  Serial.print("   y: ");
-  //  Serial.print("   left: ");
-  //  Serial.print(YLeft, DEC);
-  //    Serial.print("   right: ");
   Serial.print("   ");
   Serial.print(YRight, DEC);
 
@@ -159,8 +155,8 @@ void loop() {
   Serial.print(ULeft, DEC);
   Serial.print(" ur ");
   Serial.print(URight, DEC);
-  //  receiveCommand();
-  //  doAction(command);
+  receiveCommand();
+  doAction(command);
   Serial.println();
   delay(50);
 
@@ -210,9 +206,9 @@ void receiveCommand() {
 }
 
 void moveForward() {
-  //  Serial.println("log.debug: moveForward");
+   Serial.println("log.debug: moveForward");
   motor2.run(FORWARD);
-  //  motor1.run(FORWARD);
+  motor1.run(FORWARD);
 }
 
 void moveBack() {
@@ -230,11 +226,8 @@ void turnLeft() {
 }
 
 void stopAction() {
-  //  Serial.println("log.debug: stopAction");
+  Serial.println("log.debug: stopAction");
   motor2.run(RELEASE);
   motor1.run(RELEASE);
 }
 
-void sendTelemetry() {
-  //  Serial3.write("?rpm_left=" +
-}
