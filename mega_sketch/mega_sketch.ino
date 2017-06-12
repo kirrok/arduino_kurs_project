@@ -231,3 +231,46 @@ void stopAction() {
   motor1.run(RELEASE);
 }
 
+void mechanics() {
+    if(!isWorking) {
+        if(receiveGoalCoordinates()) {
+            distanceToFirstTurn = calculateDistanceToFirstTurn();
+            distanceAfterFirstTurn = calculateDistanceAfterFirst();
+            isWorking = true;
+        }
+    }
+    if(firstIsPassed) {
+        if(abs(remainingDistanceToFirsTurn - distanceToFirstTurn) < distanceError) {
+            firstIsPassed = true;
+        }
+        remainingDistanceToFirsTurn = moveForward(distanceToFirstTurn - remainingDistanceToFirsTurn);
+    }
+    if(turnCompleted) {
+        if(abs(remainingTurnDistance - turnDistance) < turnError) {
+            turnCompleted = true;
+        }
+        remainingTurnDistance = turn(turnDistance - remainingTurnDistance);
+    }
+    if(abs(remainingDistanceAfterFirstTurn - distanceAfterFirstTurn) < distanceError) {
+        isWorking = false;
+    }
+    remainingDistanceAfterFirstTurn = moveForward(distanceAfterFirstTurn - remainingDistanceAfterFirstTurn);
+
+
+}
+
+int calculateDistanceToFirstTurn()
+
+int calculateDistanceAfterFirstTurn()
+
+bool receiveGoalCoordinates(int x, int y) {
+    if(x > 200 || x < 1 || y > 200 || x < 1) {
+        Serial.println("wrong x or y");
+        return false;
+    }
+    goalX = x;
+    goalY = y;
+    return true;
+}
+
+
